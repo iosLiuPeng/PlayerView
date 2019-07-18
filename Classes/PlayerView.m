@@ -57,10 +57,10 @@
 
 - (void)viewConfig:(NSString *)videoName
 {
-    NSString *videoPath = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:videoName];
+    NSString *videoPath = [[NSBundle mainBundle] pathForResource:videoName ofType:@"mp4"];
     AVPlayer *player = [AVPlayer playerWithURL:[NSURL fileURLWithPath:videoPath]];
     player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
-
+    
     self.playerLayer.player = player;
 }
 
