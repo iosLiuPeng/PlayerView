@@ -1,6 +1,6 @@
 //
 //  PlayerView.m
-//  
+//
 //
 //  Created by 刘鹏 on 2019/1/24.
 //  Copyright © 2019 Musjoy. All rights reserved.
@@ -22,6 +22,33 @@
 {
     [super awakeFromNib];
     
+    self.playerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+}
+
+- (void)dealloc
+{
+    [self removeNotification];
+    
+    [self.playerLayer.player pause];
+    self.playerLayer.player = nil;
+}
+
+#pragma mark - Subjoin
+- (AVPlayerLayer *)playerLayer {
+    return (AVPlayerLayer *)self.layer;
+}
+
+- (void)viewConfig:(NSString *)videoName
+{
+    NSString *videoPath = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:videoName];
+    AVPlayer *player = [AVPlayer playerWithURL:[NSURL fileURLWithPath:videoPath]];
+    player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
+    
+    self.playerLayer.player = player;
+}
+
+- (void)addNotification
+{
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(playbackFinished:)
                                                  name:AVPlayerItemDidPlayToEndTimeNotification
@@ -36,45 +63,33 @@
                                              selector:@selector(appWillResignActive:)
                                                  name:UIApplicationWillResignActiveNotification
                                                object:nil];
-    
-    self.playerLayer.videoGravity = AVLayerVideoGravityResize;
 }
 
-- (void)dealloc
+- (void)removeNotification
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:self.playerLayer.player.currentItem];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidBecomeActiveNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillResignActiveNotification object:nil];
-    
-    [self.playerLayer.player pause];
-    self.playerLayer.player = nil;
-}
-
-#pragma mark - Subjoin
-- (AVPlayerLayer *)playerLayer {
-    return (AVPlayerLayer *)self.layer;
-}
-
-- (void)viewConfig:(NSString *)videoName
-{
-    NSString *videoPath = [[NSBundle mainBundle] pathForResource:videoName ofType:@"mp4"];
-    AVPlayer *player = [AVPlayer playerWithURL:[NSURL fileURLWithPath:videoPath]];
-    player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
-    
-    self.playerLayer.player = player;
 }
 
 #pragma mark - Public
 - (void)playVideo:(NSString *)videoName
 {
+    [self removeNotification];
+    
     [self viewConfig:videoName];
+    
+    [self addNotification];
+    
     [self.playerLayer.player play];
 }
 
 #pragma mark - Notification
 - (void)playbackFinished:(NSNotification *)notification {
-    [self.playerLayer.player seekToTime:CMTimeMake(0, 1)];
-    [self.playerLayer.player play];
+    if (notification.object == self.playerLayer.player.currentItem) {
+        [self.playerLayer.player seekToTime:CMTimeMake(0, 1)];
+        [self.playerLayer.player play];
+    }
 }
 
 - (void)appBecomeActive:(NSNotification *)notification {
